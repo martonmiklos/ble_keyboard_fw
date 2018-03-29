@@ -61,6 +61,7 @@
 #include "nrf_sdm.h"
 #include "app_error.h"
 #include "nrf_gpio.h"
+#include "nrf_drv_twi.h"
 #include "ble.h"
 #include "ble_hci.h"
 #include "ble_srv_common.h"
@@ -81,14 +82,16 @@
 #include "fds.h"
 #include "fstorage.h"
 #include "ble_conn_state.h"
+#include "elan_i2c.h"
+
+#ifdef NRF_LOG_MODULE_NAME
+#undef NRF_LOG_MODULE_NAME
+#endif
 
 #define NRF_LOG_MODULE_NAME "APP"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 
-#if BUTTONS_NUMBER < 4
-#error "Not enough resources on board to run example"
-#endif
 
 #if (NRF_SD_BLE_API_VERSION == 3)
 #define NRF_BLE_MAX_MTU_SIZE            GATT_MTU_SIZE_DEFAULT                      /**< MTU size used in the softdevice enabling and to reply to a BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST event. */
@@ -186,6 +189,9 @@ static bool           m_is_wl_changed;                                      /**<
 
 static void on_hids_evt(ble_hids_t * p_hids, ble_hids_evt_t * p_evt);
 
+
+struct i2c_client m_touchPadClient;
+const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(0);
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -1344,6 +1350,28 @@ static void power_manage(void)
     APP_ERROR_CHECK(err_code);
 }
 
+/**
+ * @brief UART initialization.
+ */
+void twi_init (void)
+{
+    ret_code_t err_code;
+
+    const nrf_drv_twi_config_t twi_elan_tp_config = {
+       .scl                = 21,
+       .sda                = 22,
+       .frequency          = NRF_TWI_FREQ_100K,
+       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
+       .clear_bus_init     = false
+    };
+
+    err_code = nrf_drv_twi_init(&m_twi, &twi_elan_tp_config, NULL, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    nrf_drv_twi_enable(&m_twi);
+}
+
+
 
 /**@brief Function for application main entry.
  */
@@ -1375,6 +1403,10 @@ int main(void)
     NRF_LOG_INFO("HID Mouse Start!\r\n");
     timers_start();
     advertising_start();
+
+    twi_init();
+    elan_i2c_initialize(&m_touchPadClient);
+
 
     // Enter main loop.
     for (;;)

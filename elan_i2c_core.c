@@ -224,7 +224,7 @@ static int __elan_initialize(struct elan_tp_data *data)
 
     error = elan_i2c_initialize(client);
 	if (error) {
-		dev_err(&client->dev, "device initialize failed: %d\n", error);
+        dev_err("device initialize failed: %d\n", error);
 		return error;
 	}
 
@@ -240,8 +240,7 @@ static int __elan_initialize(struct elan_tp_data *data)
 	if (elan_check_ASUS_special_fw(data)) {
         error = elan_i2c_sleep_control(client, false);
 		if (error) {
-			dev_err(&client->dev,
-				"failed to wake device up: %d\n", error);
+            dev_err("failed to wake device up: %d\n", error);
 			return error;
 		}
 
@@ -252,16 +251,14 @@ static int __elan_initialize(struct elan_tp_data *data)
 	data->mode |= ETP_ENABLE_ABS;
     error = elan_i2c_set_mode(client, data->mode);
 	if (error) {
-		dev_err(&client->dev,
-			"failed to switch to absolute mode: %d\n", error);
+        dev_err("failed to switch to absolute mode: %d\n", error);
 		return error;
 	}
 
 	if (!woken_up) {
         error = elan_i2c_sleep_control(client, false);
 		if (error) {
-			dev_err(&client->dev,
-				"failed to wake device up: %d\n", error);
+            dev_err("failed to wake device up: %d\n", error);
 			return error;
 		}
 	}
@@ -417,7 +414,7 @@ static int __elan_update_firmware(struct elan_tp_data *data,
 
 		error = elan_write_fw_block(data, page, checksum, i);
 		if (error) {
-			dev_err(dev, "write page %d fail: %d\n", i, error);
+            dev_err("write page %d fail: %d\n", i, error);
 			return error;
 		}
 
@@ -435,7 +432,7 @@ static int __elan_update_firmware(struct elan_tp_data *data,
 		return error;
 
 	if (sw_checksum != fw_checksum) {
-		dev_err(dev, "checksum diff sw=[%04X], fw=[%04X]\n",
+        dev_err("checksum diff sw=[%04X], fw=[%04X]\n",
 			sw_checksum, fw_checksum);
 		return -EIO;
 	}
@@ -455,7 +452,7 @@ static int elan_update_firmware(struct elan_tp_data *data,
 
 	retval = __elan_update_firmware(data, fw);
 	if (retval) {
-		dev_err(&client->dev, "firmware update failed: %d\n", retval);
+        dev_err("firmware update failed: %d\n", retval);
         elan_i2c_iap_reset(client);
 	} else {
         // Reinitialize TP after fw is updated
@@ -542,20 +539,20 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
 	/* Look for a firmware with the product id appended. */
     sprintf(fw_name, ETP_FW_NAME, data->product_id);
 	if (!fw_name) {
-		dev_err(dev, "failed to allocate memory for firmware name\n");
+        dev_err("failed to allocate memory for firmware name\n");
 		return -ENOMEM;
 	}
 
 	dev_info(dev, "requesting fw '%s'\n", fw_name);
 	if (error) {
-		dev_err(dev, "failed to request firmware: %d\n", error);
+        dev_err("failed to request firmware: %d\n", error);
 		return error;
 	}
 
 	/* Firmware file must match signature data */
 	fw_signature = &fw->data[data->fw_signature_address];
 	if (memcmp(fw_signature, signature, sizeof(signature)) != 0) {
-		dev_err(dev, "signature mismatch (expected %*ph, got %*ph)\n",
+        dev_err("signature mismatch (expected %*ph, got %*ph)\n",
 			(int)sizeof(signature), signature,
 			(int)sizeof(signature), fw_signature);
 		error = -EBADF;
@@ -586,14 +583,14 @@ static ssize_t calibrate_store(struct device *dev,
 	data->mode |= ETP_ENABLE_CALIBRATE;
     retval = elan_i2c_set_mode(client, data->mode);
 	if (retval) {
-		dev_err(dev, "failed to enable calibration mode: %d\n",
+        dev_err("failed to enable calibration mode: %d\n",
 			retval);
 		goto out;
 	}
 
     retval = elan_i2c_calibrate(client);
 	if (retval) {
-		dev_err(dev, "failed to start calibration: %d\n",
+        dev_err("failed to start calibration: %d\n",
 			retval);
 		goto out_disable_calibrate;
 	}
@@ -605,7 +602,7 @@ static ssize_t calibrate_store(struct device *dev,
 
         retval = elan_i2c_calibrate_result(client, val);
         if (retval) {
-			dev_err(dev, "failed to check calibration result: %d\n",
+            dev_err("failed to check calibration result: %d\n",
 				retval);
         } else if (val[0] == 0) {
 			break; /* calibration done */
@@ -613,7 +610,7 @@ static ssize_t calibrate_store(struct device *dev,
 	} while (--tries);
 
 	if (tries == 0) {
-		dev_err(dev, "failed to calibrate. Timeout.\n");
+        dev_err("failed to calibrate. Timeout.\n");
 		retval = -ETIMEDOUT;
 	}
 
@@ -621,7 +618,7 @@ out_disable_calibrate:
 	data->mode &= ~ETP_ENABLE_CALIBRATE;
     error = elan_i2c_set_mode(data->client, data->mode);
 	if (error) {
-		dev_err(dev, "failed to disable calibration mode: %d\n",
+        dev_err("failed to disable calibration mode: %d\n",
 			error);
 		if (!retval)
 			retval = error;
@@ -660,7 +657,7 @@ static ssize_t acquire_store(struct device *dev, struct device_attribute *attr,
 	data->mode |= ETP_ENABLE_CALIBRATE;
     retval = elan_i2c_set_mode(data->client, data->mode);
 	if (retval) {
-		dev_err(dev, "Failed to enable calibration mode to get baseline: %d\n",
+        dev_err("Failed to enable calibration mode to get baseline: %d\n",
 			retval);
 		goto out;
 	}
@@ -670,7 +667,7 @@ static ssize_t acquire_store(struct device *dev, struct device_attribute *attr,
     retval = elan_i2c_get_baseline_data(data->client, true,
 					      &data->max_baseline);
 	if (retval) {
-		dev_err(dev, "Failed to read max baseline form device: %d\n",
+        dev_err("Failed to read max baseline form device: %d\n",
 			retval);
 		goto out_disable_calibrate;
 	}
@@ -678,7 +675,7 @@ static ssize_t acquire_store(struct device *dev, struct device_attribute *attr,
     retval = elan_i2c_get_baseline_data(data->client, false,
 					      &data->min_baseline);
 	if (retval) {
-		dev_err(dev, "Failed to read min baseline form device: %d\n",
+        dev_err("Failed to read min baseline form device: %d\n",
 			retval);
 		goto out_disable_calibrate;
 	}
@@ -689,7 +686,7 @@ out_disable_calibrate:
 	data->mode &= ~ETP_ENABLE_CALIBRATE;
     error = elan_i2c_set_mode(data->client, data->mode);
 	if (error) {
-		dev_err(dev, "Failed to disable calibration mode after acquiring baseline: %d\n",
+        dev_err("Failed to disable calibration mode after acquiring baseline: %d\n",
 			error);
 		if (!retval)
 			retval = error;
@@ -840,7 +837,7 @@ static int elan_isr(int irq, void *dev_id)
 		goto out;
 
     if (report[ETP_REPORT_ID_OFFSET] != ETP_REPORT_ID) {
-		dev_err(dev, "invalid report id data (%x)\n",
+        dev_err("invalid report id data (%x)\n",
 			report[ETP_REPORT_ID_OFFSET]);
     } else {
 		elan_report_absolute(data, report);
@@ -866,7 +863,7 @@ static int elan_setup_input_device(struct elan_tp_data *data)
     /*error = input_mt_init_slots(input, ETP_MAX_FINGERS,
                     INPUT_MT_POINTER | INPUT_MT_DROP_UNUSED);
     if (error) {
-        dev_err(dev, "failed to initialize MT slots: %d\n", error);
+        dev_err("failed to initialize MT slots: %d\n", error);
         return error;
     }*/
 	/* Set up ST parameters */

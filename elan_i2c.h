@@ -33,7 +33,7 @@
 #include "app_error.h"
 
 #define msleep(x) {nrf_delay_ms(x);}
-#define dev_err(dev, ...) {NRF_LOG_ERROR(__VA_ARGS__)}
+#define dev_err(...) {NRF_LOG_ERROR(__VA_ARGS__)}
 #define dev_warn(dev, ...) {NRF_LOG_WARNING(__VA_ARGS__)}
 #define dev_dbg(dev, ...) {NRF_LOG_DEBUG(__VA_ARGS__)}
 #define dev_info(dev, ...) {NRF_LOG_INFO(__VA_ARGS__)}
@@ -108,6 +108,11 @@ struct device_attribute {
 static inline uint16_t get_unaligned_le16(const uint8_t *p)
 {
     return p[0] | p[1] << 8;
+}
+
+inline __u16 le16_to_cpup(const __le16 *p)
+{
+    return (__u16)*p;
 }
 
 

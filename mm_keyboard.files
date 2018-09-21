@@ -3,3 +3,5 @@ elan_i2c.h
 elan_i2c_core.c
 elan_i2c_i2c.c
 main.c
+samsung_keyboard.c
+samsung_keyboard.h

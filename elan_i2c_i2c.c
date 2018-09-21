@@ -35,7 +35,7 @@
 #define ETP_I2C_XY_TRACENUM_CMD		0x0105
 #define ETP_I2C_MAX_X_AXIS_CMD		0x0106
 #define ETP_I2C_MAX_Y_AXIS_CMD		0x0107
-#define ETP_I2C_RESOLUTION_CMD		0x0108
+#define ETP_I2C_RESOLUTION_CMD	0x0108
 #define ETP_I2C_PRESSURE_CMD		0x010A
 #define ETP_I2C_IAP_VERSION_CMD		0x0110
 #define ETP_I2C_SET_CMD			0x0300
@@ -105,7 +105,7 @@ static int elan_i2c_read_cmd(struct i2c_client *client, u16 reg, u8 *val)
 
 	retval = elan_i2c_read_block(client, reg, val, ETP_I2C_INF_LENGTH);
 	if (retval < 0) {
-		dev_err(&client->dev, "reading cmd (0x%04x) fail.\n", reg);
+        dev_err("reading cmd (0x%04x) fail.\n", reg);
 		return retval;
 	}
 
@@ -138,12 +138,10 @@ static int elan_i2c_write_cmd(struct i2c_client *client, u16 reg, u16 cmd)
 	if (ret != 1) {
 		if (ret >= 0)
 			ret = -EIO;
-		dev_err(&client->dev, "writing cmd (0x%04x) failed: %d\n",
+        dev_err("writing cmd (0x%04x) failed: %d\n",
 			reg, ret);
 		return ret;
-	}
-
-    return 0;*/
+    }*/
     return err_code;
 }
 
@@ -155,7 +153,7 @@ int elan_i2c_initialize(struct i2c_client *client)
 
 	error = elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD, ETP_I2C_RESET);
 	if (error) {
-		dev_err(dev, "device reset failed: %d\n", error);
+        dev_err("device reset failed: %d\n", error);
 		return error;
 	}
 
@@ -170,14 +168,14 @@ int elan_i2c_initialize(struct i2c_client *client)
 	error = elan_i2c_read_block(client, ETP_I2C_DESC_CMD,
 				    val, ETP_I2C_DESC_LENGTH);
 	if (error) {
-		dev_err(dev, "cannot get device descriptor: %d\n", error);
+        dev_err("cannot get device descriptor: %d\n", error);
 		return error;
 	}
 
 	error = elan_i2c_read_block(client, ETP_I2C_REPORT_DESC_CMD,
 				    val, ETP_I2C_REPORT_DESC_LENGTH);
 	if (error) {
-		dev_err(dev, "fetching report descriptor failed.: %d\n", error);
+        dev_err("fetching report descriptor failed.: %d\n", error);
 		return error;
 	}
 
@@ -198,8 +196,7 @@ int elan_i2c_power_control(struct i2c_client *client, bool enable)
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_POWER_CMD, val);
 	if (error) {
-		dev_err(&client->dev,
-			"failed to read current power state: %d\n",
+        dev_err("failed to read current power state: %d\n",
 			error);
 		return error;
 	}
@@ -212,8 +209,7 @@ int elan_i2c_power_control(struct i2c_client *client, bool enable)
 
 	error = elan_i2c_write_cmd(client, ETP_I2C_POWER_CMD, reg);
 	if (error) {
-		dev_err(&client->dev,
-			"failed to write current power state: %d\n",
+        dev_err("failed to write current power state: %d\n",
 			error);
 		return error;
 	}
@@ -262,7 +258,7 @@ int elan_i2c_get_pattern(struct i2c_client *client, u8 *pattern)
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_PATTERN_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get pattern: %d\n", error);
+        dev_err("failed to get pattern: %d\n", error);
 		return error;
 	}
 	*pattern = val[1];
@@ -279,7 +275,7 @@ int elan_i2c_get_version(struct i2c_client *client,
 
 	error = elan_i2c_get_pattern(client, &pattern_ver);
 	if (error) {
-		dev_err(&client->dev, "failed to get pattern version\n");
+        dev_err("failed to get pattern version\n");
 		return error;
 	}
 
@@ -288,7 +284,7 @@ int elan_i2c_get_version(struct i2c_client *client,
 					ETP_I2C_FW_VERSION_CMD,
 				  val);
 	if (error) {
-		dev_err(&client->dev, "failed to get %s version: %d\n",
+        dev_err("failed to get %s version: %d\n",
 			iap ? "IAP" : "FW", error);
 		return error;
 	}
@@ -310,14 +306,14 @@ int elan_i2c_get_sm_version(struct i2c_client *client,
 
 	error = elan_i2c_get_pattern(client, &pattern_ver);
 	if (error) {
-		dev_err(&client->dev, "failed to get pattern version\n");
+        dev_err("failed to get pattern version\n");
 		return error;
 	}
 
 	if (pattern_ver == 0x01) {
 		error = elan_i2c_read_cmd(client, ETP_I2C_IC_TYPE_CMD, val);
 		if (error) {
-			dev_err(&client->dev, "failed to get ic type: %d\n",
+            dev_err("failed to get ic type: %d\n",
 				error);
 			return error;
 		}
@@ -326,7 +322,7 @@ int elan_i2c_get_sm_version(struct i2c_client *client,
 		error = elan_i2c_read_cmd(client, ETP_I2C_NSM_VERSION_CMD,
 					  val);
 		if (error) {
-			dev_err(&client->dev, "failed to get SM version: %d\n",
+            dev_err("failed to get SM version: %d\n",
 				error);
 			return error;
 		}
@@ -335,7 +331,7 @@ int elan_i2c_get_sm_version(struct i2c_client *client,
 	} else {
 		error = elan_i2c_read_cmd(client, ETP_I2C_OSM_VERSION_CMD, val);
 		if (error) {
-			dev_err(&client->dev, "failed to get SM version: %d\n",
+            dev_err("failed to get SM version: %d\n",
 				error);
 			return error;
 		}
@@ -345,7 +341,7 @@ int elan_i2c_get_sm_version(struct i2c_client *client,
 		error = elan_i2c_read_cmd(client, ETP_I2C_NSM_VERSION_CMD,
 					  val);
 		if (error) {
-			dev_err(&client->dev, "failed to get SM version: %d\n",
+            dev_err("failed to get SM version: %d\n",
 				error);
 			return error;
 		}
@@ -362,7 +358,7 @@ int elan_i2c_get_product_id(struct i2c_client *client, u16 *id)
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_UNIQUEID_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get product ID: %d\n", error);
+        dev_err("failed to get product ID: %d\n", error);
 		return error;
 	}
 
@@ -381,7 +377,7 @@ int elan_i2c_get_checksum(struct i2c_client *client,
 					ETP_I2C_FW_CHECKSUM_CMD,
 				  val);
 	if (error) {
-		dev_err(&client->dev, "failed to get %s checksum: %d\n",
+        dev_err("failed to get %s checksum: %d\n",
 			iap ? "IAP" : "FW", error);
 		return error;
 	}
@@ -398,7 +394,7 @@ int elan_i2c_get_max(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_MAX_X_AXIS_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get X dimension: %d\n", error);
+        dev_err("failed to get X dimension: %d\n", error);
 		return error;
 	}
 
@@ -406,7 +402,7 @@ int elan_i2c_get_max(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_MAX_Y_AXIS_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get Y dimension: %d\n", error);
+        dev_err("failed to get Y dimension: %d\n", error);
 		return error;
 	}
 
@@ -423,7 +419,7 @@ int elan_i2c_get_resolution(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_RESOLUTION_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get resolution: %d\n", error);
+        dev_err("failed to get resolution: %d\n", error);
 		return error;
 	}
 
@@ -442,7 +438,7 @@ int elan_i2c_get_num_traces(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_XY_TRACENUM_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get trace info: %d\n", error);
+        dev_err("failed to get trace info: %d\n", error);
 		return error;
 	}
 
@@ -460,7 +456,7 @@ int elan_i2c_get_pressure_adjustment(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_PRESSURE_CMD, val);
 	if (error) {
-		dev_err(&client->dev, "failed to get pressure format: %d\n",
+        dev_err("failed to get pressure format: %d\n",
 			error);
 		return error;
 	}
@@ -481,8 +477,7 @@ int elan_i2c_iap_get_mode(struct i2c_client *client, enum tp_mode *mode)
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_IAP_CTRL_CMD, val);
 	if (error) {
-		dev_err(&client->dev,
-			"failed to read iap control register: %d\n",
+        dev_err("failed to read iap control register: %d\n",
 			error);
 		return error;
 	}
@@ -502,7 +497,7 @@ int elan_i2c_iap_reset(struct i2c_client *client)
 	error = elan_i2c_write_cmd(client, ETP_I2C_IAP_RESET_CMD,
 				   ETP_I2C_IAP_RESET);
 	if (error) {
-		dev_err(&client->dev, "cannot reset IC: %d\n", error);
+        dev_err("cannot reset IC: %d\n", error);
 		return error;
 	}
 
@@ -516,7 +511,7 @@ static int elan_i2c_set_flash_key(struct i2c_client *client)
 	error = elan_i2c_write_cmd(client, ETP_I2C_IAP_CMD,
 				   ETP_I2C_IAP_PASSWORD);
 	if (error) {
-		dev_err(&client->dev, "cannot set flash key: %d\n", error);
+        dev_err("cannot set flash key: %d\n", error);
 		return error;
 	}
 
@@ -559,7 +554,7 @@ static int elan_i2c_prepare_fw_update(struct i2c_client *client)
 		return error;
 
 	if (mode == MAIN_MODE) {
-		dev_err(dev, "wrong mode: %d\n", mode);
+        dev_err("wrong mode: %d\n", mode);
 		return -EIO;
 	}
 
@@ -574,14 +569,14 @@ static int elan_i2c_prepare_fw_update(struct i2c_client *client)
 	/* read back to check we actually enabled successfully. */
 	error = elan_i2c_read_cmd(client, ETP_I2C_IAP_CMD, val);
 	if (error) {
-		dev_err(dev, "cannot read iap password: %d\n",
+        dev_err("cannot read iap password: %d\n",
 			error);
 		return error;
 	}
 
 	password = le16_to_cpup((__le16 *)val);
 	if (password != ETP_I2C_IAP_PASSWORD) {
-		dev_err(dev, "wrong iap password: 0x%X\n", password);
+        dev_err("wrong iap password: 0x%X\n", password);
 		return -EIO;
 	}
 
@@ -595,19 +590,23 @@ static int elan_i2c_write_fw_block(struct i2c_client *client,
 	u8 page_store[ETP_FW_PAGE_SIZE + 4];
 	u8 val[3];
 	u16 result;
-	int ret, error;
+    int ret, error;
+    ret_code_t err_code;
 
 	page_store[0] = ETP_I2C_IAP_REG_L;
 	page_store[1] = ETP_I2C_IAP_REG_H;
 	memcpy(&page_store[2], page, ETP_FW_PAGE_SIZE);
 	/* recode checksum at last two bytes */
-	put_unaligned_le16(checksum, &page_store[ETP_FW_PAGE_SIZE + 2]);
+    //put_unaligned_le16(checksum, &page_store[ETP_FW_PAGE_SIZE + 2]);
+    page_store[ETP_FW_PAGE_SIZE + 2] = (u8)(checksum & 0xFF);
+    page_store[ETP_FW_PAGE_SIZE + 3] = (u8)(checksum >> 8 & 0xFF);
 
-	ret = i2c_master_send(client, page_store, sizeof(page_store));
-	if (ret != sizeof(page_store)) {
-		error = ret < 0 ? ret : -EIO;
-		dev_err(dev, "Failed to write page %d: %d\n", idx, error);
-		return error;
+    err_code = nrf_drv_twi_tx(&m_twi, client->addr, page_store, sizeof(page_store), false);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+    if (ret != NRF_SUCCESS) {
+        dev_err("Failed to write page %d: %d\n", idx, err_code);
+        return ret;
 	}
 
 	/* Wait for F/W to update one page ROM data. */
@@ -615,13 +614,13 @@ static int elan_i2c_write_fw_block(struct i2c_client *client,
 
 	error = elan_i2c_read_cmd(client, ETP_I2C_IAP_CTRL_CMD, val);
 	if (error) {
-		dev_err(dev, "Failed to read IAP write result: %d\n", error);
+        dev_err("Failed to read IAP write result: %d\n", error);
 		return error;
 	}
 
 	result = le16_to_cpup((__le16 *)val);
 	if (result & (ETP_FW_IAP_PAGE_ERR | ETP_FW_IAP_INTF_ERR)) {
-		dev_err(dev, "IAP reports failed write: %04hx\n",
+        dev_err("IAP reports failed write: %04hx\n",
 			result);
 		return -EIO;
 	}
@@ -637,34 +636,34 @@ static int elan_i2c_finish_fw_update(struct i2c_client *client,
 	int len;
 	u8 buffer[ETP_I2C_REPORT_LEN];
 
-	len = i2c_master_recv(client, buffer, ETP_I2C_REPORT_LEN);
-	if (len != ETP_I2C_REPORT_LEN) {
-		error = len < 0 ? len : -EIO;
-		dev_warn(dev, "failed to read I2C data after FW WDT reset: %d (%d)\n",
-			error, len);
-	}
+    ret_code_t err_code;
 
-	reinit_completion(completion);
+    err_code = nrf_drv_twi_rx(&m_twi, client->addr, buffer, ETP_I2C_REPORT_LEN);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+
+    if (err_code != NRF_SUCCESS) {
+		error = len < 0 ? len : -EIO;
+        dev_warn(dev, "failed to read I2C data after FW WDT reset: %d\n",
+            err_code);
+	}
 
 	error = elan_i2c_write_cmd(client, ETP_I2C_STAND_CMD, ETP_I2C_RESET);
 	if (error) {
-		dev_err(dev, "device reset failed: %d\n", error);
-	} else if (!wait_for_completion_timeout(completion,
-						msecs_to_jiffies(300))) {
-		dev_err(dev, "timeout waiting for device reset\n");
-		error = -ETIMEDOUT;
-	}
-
-	disable_irq(client->irq);
+        dev_err("device reset failed: %d\n", error);
+    }
 
 	if (error)
 		return error;
 
-	len = i2c_master_recv(client, buffer, ETP_I2C_INF_LENGTH);
-	if (len != ETP_I2C_INF_LENGTH) {
+    err_code = nrf_drv_twi_rx(&m_twi, client->addr, buffer, ETP_I2C_REPORT_LEN);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
+
+    if (err_code != NRF_SUCCESS) {
 		error = len < 0 ? len : -EIO;
-		dev_err(dev, "failed to read INT signal: %d (%d)\n",
-			error, len);
+        dev_err("failed to read INT signal: %d\n",
+            err_code);
 		return error;
 	}
 
@@ -673,20 +672,22 @@ static int elan_i2c_finish_fw_update(struct i2c_client *client,
 
 int elan_i2c_get_report(struct i2c_client *client, u8 *report)
 {
-	int len;
+    ret_code_t err_code;
 
-	len = i2c_master_recv(client, report, ETP_I2C_REPORT_LEN);
-	if (len < 0) {
-		dev_err(&client->dev, "failed to read report data: %d\n", len);
-		return len;
-	}
+    err_code = nrf_drv_twi_rx(&m_twi, client->addr, report, ETP_I2C_REPORT_LEN);
+    APP_ERROR_CHECK(err_code);
+    while (m_xfer_done == false);
 
-	if (len != ETP_I2C_REPORT_LEN) {
-		dev_err(&client->dev,
-			"wrong report length (%d vs %d expected)\n",
+    if (err_code != NRF_SUCCESS) {
+        dev_err("failed to read report data: %d\n", err_code);
+        return err_code;
+    }
+
+    /*if (len != ETP_I2C_REPORT_LEN) {
+        dev_err("wrong report length (%d vs %d expected)\n",
 			len, ETP_I2C_REPORT_LEN);
 		return -EIO;
-	}
+    }*/
 
 	return 0;
 }

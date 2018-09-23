@@ -201,7 +201,7 @@ int elan_i2c_power_control(struct i2c_client *client, bool enable)
 		return error;
 	}
 
-	reg = le16_to_cpup((__le16 *)val);
+    reg = *(u16*)val;
 	if (enable)
 		reg &= ~ETP_DISABLE_POWER;
 	else

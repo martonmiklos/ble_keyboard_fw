@@ -1,30 +1,30 @@
 /**
  * Copyright (c) 2014 - 2017, Nordic Semiconductor ASA
- * 
+ *
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this
  *    list of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form, except as embedded into a Nordic
  *    Semiconductor ASA integrated circuit in a product or a software update for
  *    such product, must reproduce the above copyright notice, this list of
  *    conditions and the following disclaimer in the documentation and/or other
  *    materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of Nordic Semiconductor ASA nor the names of its
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
- * 
+ *
  * 4. This software, with or without modification, must only be used with a
  *    Nordic Semiconductor ASA integrated circuit.
- * 
+ *
  * 5. Any software provided in binary form under this license must not be reverse
  *    engineered, decompiled, modified and/or disassembled.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY NORDIC SEMICONDUCTOR ASA "AS IS" AND ANY EXPRESS
  * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -35,7 +35,7 @@
  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 /** @file
@@ -55,6 +55,7 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include "nordic_common.h"
 #include "nrf.h"
 #include "nrf_soc.h"
@@ -83,6 +84,7 @@
 #include "fstorage.h"
 #include "ble_conn_state.h"
 #include "elan_i2c.h"
+#include "keyboard_driver.h"
 
 #ifdef NRF_LOG_MODULE_NAME
 #undef NRF_LOG_MODULE_NAME
@@ -102,11 +104,13 @@
 #define CENTRAL_LINK_COUNT              0                                          /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT           1                                          /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
-#define DEVICE_NAME                     "Nordic_Mouse"                             /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "NordicSemiconductor"                      /**< Manufacturer. Will be passed to Device Information Service. */
+#define DEVICE_NAME                     "MM-keyboard"                              /**< Name of device. Will be included in the advertising data. */
+#define MANUFACTURER_NAME               "MM"                      /**< Manufacturer. Will be passed to Device Information Service. */
 
 #define APP_TIMER_PRESCALER             0                                          /**< Value of the RTC1 PRESCALER register. */
 #define APP_TIMER_OP_QUEUE_SIZE         4                                          /**< Size of timer operation queues. */
+
+#define KEYBOARD_SCAN_INTERVAL          APP_TIMER_TICKS(25, APP_TIMER_PRESCALER)   /**< Keyboard scan interval (ticks). */
 
 #define BATTERY_LEVEL_MEAS_INTERVAL     APP_TIMER_TICKS(2000, APP_TIMER_PRESCALER) /**< Battery level measurement interval (ticks). */
 #define MIN_BATTERY_LEVEL               81                                         /**< Minimum simulated battery level. */
@@ -138,7 +142,7 @@
 #define SEC_PARAM_MAX_KEY_SIZE          16                                          /**< Maximum encryption key size. */
 
 #define MOVEMENT_SPEED                  5                                           /**< Number of pixels by which the cursor is moved each time a button is pushed. */
-#define INPUT_REPORT_COUNT              3                                           /**< Number of input reports in this application. */
+#define INPUT_REPORT_COUNT              4                                           /**< Number of input reports in this application. */
 #define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Mouse Input Report containing button data. */
 #define INPUT_REP_MOVEMENT_LEN          3                                           /**< Length of Mouse Input Report containing movement data. */
 #define INPUT_REP_MEDIA_PLAYER_LEN      1                                           /**< Length of Mouse Input Report containing media player data. */
@@ -148,6 +152,10 @@
 #define INPUT_REP_REF_BUTTONS_ID        1                                           /**< Id of reference to Mouse Input Report containing button data. */
 #define INPUT_REP_REF_MOVEMENT_ID       2                                           /**< Id of reference to Mouse Input Report containing movement data. */
 #define INPUT_REP_REF_MPLAYER_ID        3                                           /**< Id of reference to Mouse Input Report containing media player data. */
+#define INPUT_REP_REF_KBD_ID            4                                           /**< Id of reference to Keyboard Input Report. */
+
+#define INPUT_REPORT_KEYS_INDEX         4                                           /**< Index of Input Report. */
+#define INPUT_REPORT_KEYS_MAX_LEN       8                                           /**< Maximum length of the Input Report characteristic. */
 
 #define BASE_USB_HID_SPEC_VERSION       0x0101                                      /**< Version number of base USB HID Specification implemented by this application. */
 
@@ -169,12 +177,16 @@
 #define APP_ADV_FAST_TIMEOUT            30                                                        /**< The duration of the fast advertising period (in seconds). */
 #define APP_ADV_SLOW_TIMEOUT            180                                                       /**< The duration of the slow advertising period (in seconds). */
 
+
+
 static ble_hids_t m_hids;                                                                         /**< Structure used to identify the HID service. */
 static ble_bas_t  m_bas;                                                                          /**< Structure used to identify the battery service. */
 static bool       m_in_boot_mode = false;                                                         /**< Current protocol mode. */
 static uint16_t   m_conn_handle  = BLE_CONN_HANDLE_INVALID;                                       /**< Handle of the current connection. */
 
+
 APP_TIMER_DEF(m_battery_timer_id);                                                                /**< Battery timer. */
+APP_TIMER_DEF(m_keyboard_timer_id);                                                               /**< Keyboard scan timer. */
 
 static pm_peer_id_t m_peer_id;                                                                    /**< Device reference handle to the current bonded central. */
 
@@ -437,26 +449,6 @@ static void battery_level_meas_timeout_handler(void * p_context)
     battery_level_update();
 }
 
-
-/**@brief Function for the Timer initialization.
- *
- * @details Initializes the timer module.
- */
-static void timers_init(void)
-{
-    uint32_t err_code;
-
-    // Initialize timer module, making it use the scheduler.
-    APP_TIMER_APPSH_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, true);
-
-    // Create battery timer.
-    err_code = app_timer_create(&m_battery_timer_id,
-                                APP_TIMER_MODE_REPEATED,
-                                battery_level_meas_timeout_handler);
-    APP_ERROR_CHECK(err_code);
-}
-
-
 /**@brief Function for the GAP initialization.
  *
  * @details This function sets up all the necessary GAP (Generic Access Profile) parameters of the
@@ -628,6 +620,50 @@ static void hids_init(void)
         0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
         0x0A, 0x24, 0x02, // Usage (AC Back)
         0x81, 0x06,       // Input (Data,Value,Relative,Bit Field)
+
+        // Report ID 4: Keyboard
+        0x09, 0x06,                 // Usage (Keyboard)
+        0xA1, 0x01,                 // Collection (Application)
+        0x85, 0x04,                 // Report Id (4)
+        0x05, 0x07,                 //     Usage Page (Key Codes)
+        0x19, 0xe0,                 //     Usage Minimum (224)
+        0x29, 0xe7,                 //     Usage Maximum (231)
+        0x15, 0x00,                 //     Logical Minimum (0)
+        0x25, 0x01,                 //     Logical Maximum (1)
+        0x75, 0x01,                 //     Report Size (1)
+        0x95, 0x08,                 //     Report Count (8)
+        0x81, 0x02,                 //     Input (Data, Variable, Absolute)
+
+        0x95, 0x01,                 //     Report Count (1)
+        0x75, 0x08,                 //     Report Size (8)
+        0x81, 0x01,                 //     Input (Constant) reserved byte(1)
+
+        0x95, 0x05,                 //     Report Count (5)
+        0x75, 0x01,                 //     Report Size (1)
+        0x05, 0x08,                 //     Usage Page (Page# for LEDs)
+        0x19, 0x01,                 //     Usage Minimum (1)
+        0x29, 0x05,                 //     Usage Maximum (5)
+        0x91, 0x02,                 //     Output (Data, Variable, Absolute), Led report
+        0x95, 0x01,                 //     Report Count (1)
+        0x75, 0x03,                 //     Report Size (3)
+        0x91, 0x01,                 //     Output (Data, Variable, Absolute), Led report padding
+
+        0x95, 0x06,                 //     Report Count (6)
+        0x75, 0x08,                 //     Report Size (8)
+        0x15, 0x00,                 //     Logical Minimum (0)
+        0x25, 0x65,                 //     Logical Maximum (101)
+        0x05, 0x07,                 //     Usage Page (Key codes)
+        0x19, 0x00,                 //     Usage Minimum (0)
+        0x29, 0x65,                 //     Usage Maximum (101)
+        0x81, 0x00,                 //     Input (Data, Array) Key array(6 bytes)
+
+        0x09, 0x05,                 //     Usage (Vendor Defined)
+        0x15, 0x00,                 //     Logical Minimum (0)
+        0x26, 0xFF, 0x00,           //     Logical Maximum (255)
+        0x75, 0x08,                 //     Report Count (2)
+        0x95, 0x02,                 //     Report Size (8 bit)
+        0xB1, 0x02,                 //     Feature (Data, Variable, Absolute)
+
         0xC0              // End Collection
     };
 
@@ -660,13 +696,22 @@ static void hids_init(void)
     BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&p_input_report->security_mode.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&p_input_report->security_mode.write_perm);
 
+    p_input_report                      = &inp_rep_array[INPUT_REPORT_KEYS_INDEX];
+    p_input_report->max_len             = INPUT_REPORT_KEYS_MAX_LEN;
+    p_input_report->rep_ref.report_id   = INPUT_REP_REF_KBD_ID;
+    p_input_report->rep_ref.report_type = BLE_HIDS_REP_TYPE_INPUT;
+
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&p_input_report->security_mode.cccd_write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&p_input_report->security_mode.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&p_input_report->security_mode.write_perm);
+
     hid_info_flags = HID_INFO_FLAG_REMOTE_WAKE_MSK | HID_INFO_FLAG_NORMALLY_CONNECTABLE_MSK;
 
     memset(&hids_init_obj, 0, sizeof(hids_init_obj));
 
     hids_init_obj.evt_handler                    = on_hids_evt;
     hids_init_obj.error_handler                  = service_error_handler;
-    hids_init_obj.is_kb                          = false;
+    hids_init_obj.is_kb                          = true;
     hids_init_obj.is_mouse                       = true;
     hids_init_obj.inp_rep_count                  = INPUT_REPORT_COUNT;
     hids_init_obj.p_inp_rep_array                = inp_rep_array;
@@ -710,7 +755,7 @@ static void services_init(void)
 {
     dis_init();
     bas_init();
-    hids_init();
+    //hids_init();
 }
 
 /**@brief Function for handling a Connection Parameters error.
@@ -753,6 +798,9 @@ static void timers_start(void)
     uint32_t err_code;
 
     err_code = app_timer_start(m_battery_timer_id, BATTERY_LEVEL_MEAS_INTERVAL, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = app_timer_start(m_keyboard_timer_id, KEYBOARD_SCAN_INTERVAL, NULL);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -1235,7 +1283,58 @@ static void mouse_movement_send(int16_t x_delta, int16_t y_delta)
 }
 
 
-/**@brief Function for the Power manager.
+/**@brief Function for sending sample key presses to the peer.
+ *
+ * @param[in]   key_pattern_len   Pattern length.
+ * @param[in]   p_key_pattern     Pattern to be sent.
+ */
+static void keys_send(uint8_t key_pattern_len, uint8_t * p_key_pattern)
+{
+    uint32_t err_code;
+
+    if (!m_in_boot_mode) {
+        err_code = ble_hids_inp_rep_send(&m_hids,
+                                         INPUT_REPORT_KEYS_INDEX,
+                                         INPUT_REPORT_KEYS_MAX_LEN,
+                                         p_key_pattern);
+    } else {
+        err_code = ble_hids_boot_kb_inp_rep_send(&m_hids,
+                                                 INPUT_REPORT_KEYS_MAX_LEN,
+                                                 p_key_pattern);
+    }
+
+    if ((err_code != NRF_SUCCESS) &&
+            (err_code != NRF_ERROR_INVALID_STATE) &&
+            (err_code != BLE_ERROR_NO_TX_PACKETS) &&
+            (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+            )
+    {
+        APP_ERROR_HANDLER(err_code);
+    }
+}
+
+/**@brief Function for handling the keyboard scan timer timeout.
+ *
+ * @details This function will be called each time the keyboard scan timer expires.
+ *
+ */
+static void keyboard_scan_timeout_handler(void * p_context)
+{
+    const uint8_t *key_packet;
+    uint8_t        key_packet_size;
+    if (keyboard_new_packet(&key_packet, &key_packet_size)) {
+        if(key_packet[2] == 0xFA){
+            sleep_mode_enter();
+        } else {
+            if (m_conn_handle != BLE_CONN_HANDLE_INVALID) {
+                keys_send(key_packet_size,(uint8_t *)&key_packet[0]);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Function for the Power manager.
  */
 static void power_manage(void)
 {
@@ -1243,6 +1342,33 @@ static void power_manage(void)
 
     APP_ERROR_CHECK(err_code);
 }
+
+
+/**
+ * @brief Function for the Timer initialization.
+ *
+ * @details Initializes the timer module.
+ */
+static void timers_init(void)
+{
+    uint32_t err_code;
+
+    // Initialize timer module, making it use the scheduler.
+    APP_TIMER_APPSH_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
+
+    // Create battery timer.
+    err_code = app_timer_create(&m_battery_timer_id,
+                                APP_TIMER_MODE_REPEATED,
+                                battery_level_meas_timeout_handler);
+    APP_ERROR_CHECK(err_code);
+
+    // Create keyboard timer.
+    err_code = app_timer_create(&m_keyboard_timer_id,
+                                APP_TIMER_MODE_REPEATED,
+                                keyboard_scan_timeout_handler);
+    APP_ERROR_CHECK(err_code);
+}
+
 
 /**
  * @brief UART initialization.
@@ -1265,7 +1391,15 @@ void twi_init (void)
     nrf_drv_twi_enable(&m_twi);
 }
 
-
+static void lfclk_config(void)
+{
+    NRF_CLOCK->LFCLKSRC = (CLOCK_LFCLKSRC_SRC_Xtal << CLOCK_LFCLKSRC_SRC_Pos);
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+    NRF_CLOCK->TASKS_LFCLKSTART = 1;
+    while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0) {
+    }
+    NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+}
 
 /**@brief Function for application main entry.
  */
@@ -1273,13 +1407,13 @@ int main(void)
 {
     bool     erase_bonds;
     uint32_t err_code;
-
+    lfclk_config();
     // Initialize.
-    err_code = NRF_LOG_INIT(NULL);
-    APP_ERROR_CHECK(err_code);
+    //err_code = NRF_LOG_INIT(NULL);
+    //APP_ERROR_CHECK(err_code);
 
     timers_init();
-    ble_stack_init();
+    /*ble_stack_init();
     scheduler_init();
     peer_manager_init(erase_bonds);
     if (erase_bonds == true)
@@ -1289,26 +1423,25 @@ int main(void)
     gap_params_init();
     advertising_init();
     services_init();
-    conn_params_init();
+    conn_params_init();*/
 
     // Start execution.
     NRF_LOG_INFO("HID Mouse Start!\r\n");
     timers_start();
-    advertising_start();
+    //advertising_start();
 
-    twi_init();
+    /*twi_init();
     elan_i2c_power_control(&m_touchPadClient, true);
-    elan_i2c_initialize(&m_touchPadClient);
+    elan_i2c_initialize(&m_touchPadClient);*/
+    keyboard_init();
 
 
-    // Enter main loop.
-    for (;;)
-    {
-        app_sched_execute();
-        if (NRF_LOG_PROCESS() == false)
-        {
-            power_manage();
-        }
+    for (;;) {
+        /*if (sleep) {
+            sd_power_system_off();
+        }*/
+        //app_sched_execute();
+        //power_manage();
     }
 }
 

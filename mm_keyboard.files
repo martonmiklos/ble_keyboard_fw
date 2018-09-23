@@ -1,7 +1,12 @@
+DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_driver.c
+DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_driver.h
+DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_map.h
+DIY-A-BLE-Keyboard/BLE-Keyboard/keycode.h
 config/sdk_config.h
 elan_i2c.h
 elan_i2c_core.c
 elan_i2c_i2c.c
+hwconfig.h
 main.c
 samsung_keyboard.c
 samsung_keyboard.h

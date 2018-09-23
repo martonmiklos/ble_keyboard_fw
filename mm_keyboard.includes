@@ -223,3 +223,4 @@ config
 ../../../components/drivers_nrf/power
 ../../../components/drivers_nrf/wdt
 .
+DIY-A-BLE-Keyboard/BLE-Keyboard

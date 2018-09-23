@@ -40,6 +40,7 @@ SRC_FILES += \
   $(PROJ_DIR)/elan_i2c_core.c \
   $(PROJ_DIR)/elan_i2c_i2c.c \
   $(PROJ_DIR)/samsung_keyboard.c \
+  $(PROJ_DIR)/DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_driver.c \
   $(SDK_ROOT)/external/segger_rtt/RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
@@ -172,6 +173,8 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/softdevice/common/softdevice_handler \
   $(SDK_ROOT)/components/ble/ble_services/ble_hrs \
   $(SDK_ROOT)/components/libraries/log/src \
+  $(PROJ_DIR) \
+  $(PROJ_DIR)/DIY-A-BLE-Keyboard/BLE-Keyboard
 
 # Libraries common to all targets
 LIB_FILES += \
@@ -187,7 +190,7 @@ CFLAGS += -DNRF51822
 CFLAGS += -DNRF_SD_BLE_API_VERSION=2
 CFLAGS += -mcpu=cortex-m0
 CFLAGS += -mthumb -mabi=aapcs
-CFLAGS +=  -Wall -O0 -g
+CFLAGS +=  -Wall -O0 -g3
 CFLAGS += -mfloat-abi=soft
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing

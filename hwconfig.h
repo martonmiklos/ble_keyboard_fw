@@ -33,7 +33,7 @@
 #define KSO12   30
 #define KSO13   29
 #define KSO14   28
-#define KSO15   27
+#define KSO15   12
 #define LED_CAPS   26
 #define LED_FN   25
 #define NENABLE_TOUCHPAD   12

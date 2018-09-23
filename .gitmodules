@@ -1,0 +1,3 @@
+[submodule "DIY-A-BLE-Keyboard"]
+	path = DIY-A-BLE-Keyboard
+	url = git@github.com:martonmiklos/DIY-A-BLE-Keyboard.git

@@ -16,8 +16,8 @@
  * Trademarks are the property of their respective owners.
  */
 
-#ifndef _ELAN_I2C_H
-#define _ELAN_I2C_H
+#ifndef ELAN_I2C_H
+#define ELAN_I2C_H
 
 #include <stdbool.h>
 #include <stdint.h>

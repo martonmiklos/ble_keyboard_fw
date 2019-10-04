@@ -15,15 +15,16 @@
 #define KSI2   16
 #define KSI3   20
 #define KSI4   10
-#define KSI5   0
+#define KSI5   8
 #define KSI6   6
 #define KSI7   5
+
 #define KSO0   11
 #define KSO1   13
 #define KSO2   17
 #define KSO3   14
 #define KSO4   15
-#define KSO5   0
+#define KSO5   9
 #define KSO6   7
 #define KSO7   4
 #define KSO8   3
@@ -34,7 +35,6 @@
 #define KSO13   29
 #define KSO14   28
 #define KSO15   12
-#define LED_CAPS   26
 #define LED_FN   25
 #define NENABLE_TOUCHPAD   12
 #define TOUCH_ALERT   23

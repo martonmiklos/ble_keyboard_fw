@@ -1251,7 +1251,7 @@
 // <e> PPI_ENABLED - nrf_drv_ppi - PPI peripheral driver
 //==========================================================
 #ifndef PPI_ENABLED
-#define PPI_ENABLED 0
+#define PPI_ENABLED 1
 #endif
 #if  PPI_ENABLED
 // <e> PPI_CONFIG_LOG_ENABLED - Enables logging in the module.
@@ -1313,7 +1313,7 @@
 // <e> PWM_ENABLED - nrf_drv_pwm - PWM peripheral driver
 //==========================================================
 #ifndef PWM_ENABLED
-#define PWM_ENABLED 0
+#define PWM_ENABLED 1
 #endif
 #if  PWM_ENABLED
 // <o> PWM_DEFAULT_CONFIG_OUT0_PIN - Out0 pin  <0-31> 
@@ -2243,7 +2243,7 @@
 // <e> TIMER_ENABLED - nrf_drv_timer - TIMER periperal driver
 //==========================================================
 #ifndef TIMER_ENABLED
-#define TIMER_ENABLED 0
+#define TIMER_ENABLED 1
 #endif
 #if  TIMER_ENABLED
 // <o> TIMER_DEFAULT_CONFIG_FREQUENCY  - Timer frequency if in Timer mode
@@ -2300,7 +2300,7 @@
  
 
 #ifndef TIMER0_ENABLED
-#define TIMER0_ENABLED 0
+#define TIMER0_ENABLED 1
 #endif
 
 // <q> TIMER1_ENABLED  - Enable TIMER1 instance
@@ -2936,7 +2936,7 @@
  
 
 #ifndef APP_PWM_ENABLED
-#define APP_PWM_ENABLED 0
+#define APP_PWM_ENABLED 1
 #endif
 
 // <e> APP_SCHEDULER_ENABLED - app_scheduler - Events scheduler
@@ -3164,7 +3164,7 @@
  
 
 #ifndef HARDFAULT_HANDLER_ENABLED
-#define HARDFAULT_HANDLER_ENABLED 0
+#define HARDFAULT_HANDLER_ENABLED 1
 #endif
 
 // <e> HCI_MEM_POOL_ENABLED - hci_mem_pool - memory pool implementation used by HCI
@@ -3475,7 +3475,7 @@
 // <e> NRF_LOG_ENABLED - nrf_log - Logging
 //==========================================================
 #ifndef NRF_LOG_ENABLED
-#define NRF_LOG_ENABLED 0
+#define NRF_LOG_ENABLED 1
 #endif
 #if  NRF_LOG_ENABLED
 // <e> NRF_LOG_USES_COLORS - If enabled then ANSI escape code for colors is prefixed to every string
@@ -3544,7 +3544,7 @@
 // <4=> Debug 
 
 #ifndef NRF_LOG_DEFAULT_LEVEL
-#define NRF_LOG_DEFAULT_LEVEL 3
+#define NRF_LOG_DEFAULT_LEVEL 4
 #endif
 
 // <e> NRF_LOG_DEFERRED - Enable deffered logger.
@@ -3584,7 +3584,7 @@
 // <i> Logger backend RAM usage is determined by this value.
 
 #ifndef NRF_LOG_BACKEND_MAX_STRING_LENGTH
-#define NRF_LOG_BACKEND_MAX_STRING_LENGTH 256
+#define NRF_LOG_BACKEND_MAX_STRING_LENGTH 128
 #endif
 
 // <o> NRF_LOG_TIMESTAMP_DIGITS - Number of digits for timestamp 
@@ -3597,7 +3597,7 @@
 // <e> NRF_LOG_BACKEND_SERIAL_USES_UART - If enabled data is printed over UART
 //==========================================================
 #ifndef NRF_LOG_BACKEND_SERIAL_USES_UART
-#define NRF_LOG_BACKEND_SERIAL_USES_UART 1
+#define NRF_LOG_BACKEND_SERIAL_USES_UART 0
 #endif
 #if  NRF_LOG_BACKEND_SERIAL_USES_UART
 // <o> NRF_LOG_BACKEND_SERIAL_UART_BAUDRATE  - Default Baudrate
@@ -3666,7 +3666,7 @@
 // <e> NRF_LOG_BACKEND_SERIAL_USES_RTT - If enabled data is printed using RTT
 //==========================================================
 #ifndef NRF_LOG_BACKEND_SERIAL_USES_RTT
-#define NRF_LOG_BACKEND_SERIAL_USES_RTT 0
+#define NRF_LOG_BACKEND_SERIAL_USES_RTT 1
 #endif
 #if  NRF_LOG_BACKEND_SERIAL_USES_RTT
 // <o> NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE - RTT output buffer size. 
@@ -3675,7 +3675,7 @@
 // <i> if it is bigger than default RTT buffer size.
 
 #ifndef NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE
-#define NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE 512
+#define NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE 256
 #endif
 
 #endif //NRF_LOG_BACKEND_SERIAL_USES_RTT

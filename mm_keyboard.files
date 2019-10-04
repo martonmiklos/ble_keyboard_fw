@@ -1,3 +1,7 @@
+../../../components/ble/ble_services/ble_hids/ble_hids.c
+../../../components/ble/ble_services/ble_hids/ble_hids.h
+../../../components/libraries/pwm/app_pwm.c
+../../../components/libraries/pwm/app_pwm.h
 DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_driver.c
 DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_driver.h
 DIY-A-BLE-Keyboard/BLE-Keyboard/keyboard_map.h
@@ -8,5 +12,3 @@ elan_i2c_core.c
 elan_i2c_i2c.c
 hwconfig.h
 main.c
-samsung_keyboard.c
-samsung_keyboard.h

@@ -53,38 +53,43 @@
  * application will not know whether a connected central is a known device or not.
  */
 
-#include <stdint.h>
-#include <string.h>
-
-#include "nordic_common.h"
-#include "nrf.h"
-#include "nrf_soc.h"
-#include "nrf_sdm.h"
-#include "app_error.h"
-#include "nrf_gpio.h"
-#include "nrf_drv_twi.h"
-#include "ble.h"
-#include "ble_hci.h"
-#include "ble_srv_common.h"
-#include "ble_advdata.h"
-#include "ble_hids.h"
-#include "ble_bas.h"
-#include "ble_dis.h"
-#include "ble_conn_params.h"
-#include "bsp.h"
-#include "sensorsim.h"
-#include "bsp_btn_ble.h"
-#include "app_scheduler.h"
-#include "softdevice_handler_appsh.h"
-#include "app_timer_appsh.h"
-#include "peer_manager.h"
 #include "app_button.h"
+#include "app_error.h"
+#include "app_pwm.h"
+#include "app_scheduler.h"
+#include "app_timer_appsh.h"
+
+#include "ble.h"
+#include "ble_advdata.h"
 #include "ble_advertising.h"
+#include "ble_bas.h"
+#include "ble_conn_params.h"
+#include "ble_conn_state.h"
+#include "ble_dis.h"
+#include "ble_hci.h"
+#include "ble_hids.h"
+#include "ble_srv_common.h"
+
+#include "bsp.h"
+#include "bsp_btn_ble.h"
+#include "elan_i2c.h"
 #include "fds.h"
 #include "fstorage.h"
-#include "ble_conn_state.h"
-#include "elan_i2c.h"
 #include "keyboard_driver.h"
+#include "nordic_common.h"
+
+#include "nrf.h"
+#include "nrf_drv_twi.h"
+#include "nrf_gpio.h"
+#include "nrf_sdm.h"
+#include "nrf_soc.h"
+
+#include "peer_manager.h"
+#include "sensorsim.h"
+#include "softdevice_handler_appsh.h"
+
+#include <stdint.h>
+#include <string.h>
 
 #ifdef NRF_LOG_MODULE_NAME
 #undef NRF_LOG_MODULE_NAME
@@ -105,7 +110,7 @@
 #define PERIPHERAL_LINK_COUNT           1                                          /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
 #define DEVICE_NAME                     "MM-keyboard"                              /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "MM"                      /**< Manufacturer. Will be passed to Device Information Service. */
+#define MANUFACTURER_NAME               "MM"                                       /**< Manufacturer. Will be passed to Device Information Service. */
 
 #define APP_TIMER_PRESCALER             0                                          /**< Value of the RTC1 PRESCALER register. */
 #define APP_TIMER_OP_QUEUE_SIZE         4                                          /**< Size of timer operation queues. */
@@ -133,11 +138,11 @@
 #define MAX_CONN_PARAM_UPDATE_COUNT     3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
 #define SEC_PARAM_BOND                  1                                           /**< Perform bonding. */
-#define SEC_PARAM_MITM                  0                                           /**< Man In The Middle protection not required. */
+#define SEC_PARAM_MITM                  1                                           /**< Man In The Middle protection not required. */
 #define SEC_PARAM_LESC                  0                                           /**< LE Secure Connections not enabled. */
 #define SEC_PARAM_KEYPRESS              0                                           /**< Keypress notifications not enabled. */
-#define SEC_PARAM_IO_CAPABILITIES       BLE_GAP_IO_CAPS_NONE                        /**< No I/O capabilities. */
-#define SEC_PARAM_OOB                   0                                           /**< Out Of Band data not available. */
+#define SEC_PARAM_IO_CAPABILITIES       BLE_GAP_IO_CAPS_KEYBOARD_ONLY               /**< No I/O capabilities. */
+#define SEC_PARAM_OOB                   1                                           /**< Out Of Band data not available. */
 #define SEC_PARAM_MIN_KEY_SIZE          7                                           /**< Minimum encryption key size. */
 #define SEC_PARAM_MAX_KEY_SIZE          16                                          /**< Maximum encryption key size. */
 
@@ -146,15 +151,17 @@
 #define INPUT_REP_BUTTONS_LEN           3                                           /**< Length of Mouse Input Report containing button data. */
 #define INPUT_REP_MOVEMENT_LEN          3                                           /**< Length of Mouse Input Report containing movement data. */
 #define INPUT_REP_MEDIA_PLAYER_LEN      1                                           /**< Length of Mouse Input Report containing media player data. */
+
 #define INPUT_REP_BUTTONS_INDEX         0                                           /**< Index of Mouse Input Report containing button data. */
 #define INPUT_REP_MOVEMENT_INDEX        1                                           /**< Index of Mouse Input Report containing movement data. */
 #define INPUT_REP_MPLAYER_INDEX         2                                           /**< Index of Mouse Input Report containing media player data. */
+#define INPUT_REPORT_KEYS_INDEX         3                                           /**< Index of Input Report. */
+
 #define INPUT_REP_REF_BUTTONS_ID        1                                           /**< Id of reference to Mouse Input Report containing button data. */
 #define INPUT_REP_REF_MOVEMENT_ID       2                                           /**< Id of reference to Mouse Input Report containing movement data. */
 #define INPUT_REP_REF_MPLAYER_ID        3                                           /**< Id of reference to Mouse Input Report containing media player data. */
 #define INPUT_REP_REF_KBD_ID            4                                           /**< Id of reference to Keyboard Input Report. */
 
-#define INPUT_REPORT_KEYS_INDEX         4                                           /**< Index of Input Report. */
 #define INPUT_REPORT_KEYS_MAX_LEN       8                                           /**< Maximum length of the Input Report characteristic. */
 
 #define BASE_USB_HID_SPEC_VERSION       0x0101                                      /**< Version number of base USB HID Specification implemented by this application. */
@@ -195,6 +202,7 @@ static ble_uuid_t m_adv_uuids[] = {{BLE_UUID_HUMAN_INTERFACE_DEVICE_SERVICE, BLE
 static pm_peer_id_t   m_whitelist_peers[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];  /**< List of peers currently in the whitelist. */
 static uint32_t       m_whitelist_peer_cnt;                                 /**< Number of peers currently in the whitelist. */
 static bool           m_is_wl_changed;                                      /**< Indicates if the whitelist has been changed since last time it has been updated in the Peer Manager. */
+
 
 static void on_hids_evt(ble_hids_t * p_hids, ble_hids_evt_t * p_evt);
 
@@ -327,7 +335,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
         case PM_EVT_CONN_SEC_CONFIG_REQ:
         {
             // Reject pairing request from an already bonded peer.
-            pm_conn_sec_config_t conn_sec_config = {.allow_repairing = false};
+            pm_conn_sec_config_t conn_sec_config = {.allow_repairing = true};
             pm_conn_sec_config_reply(p_evt->conn_handle, &conn_sec_config);
         } break;
 
@@ -423,7 +431,7 @@ static void battery_level_update(void)
     uint8_t  battery_level;
 
     battery_level = 42;
-
+    NRF_LOG_INFO("Upd. batt\n");
     err_code = ble_bas_battery_level_update(&m_bas, battery_level);
     if ((err_code != NRF_SUCCESS) &&
         (err_code != NRF_ERROR_INVALID_STATE) &&
@@ -467,7 +475,7 @@ static void gap_params_init(void)
                                           strlen(DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
 
-    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_HID_MOUSE);
+    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_HID_KEYBOARD);
     APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
@@ -739,6 +747,13 @@ static void hids_init(void)
     BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(
         &hids_init_obj.security_mode_boot_mouse_inp_rep.write_perm);
 
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(
+        &hids_init_obj.security_mode_boot_kb_inp_rep.cccd_write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&hids_init_obj.security_mode_boot_kb_inp_rep.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&hids_init_obj.security_mode_boot_kb_inp_rep.write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&hids_init_obj.security_mode_boot_kb_outp_rep.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&hids_init_obj.security_mode_boot_kb_outp_rep.write_perm);
+
     BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&hids_init_obj.security_mode_protocol.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_ENC_NO_MITM(&hids_init_obj.security_mode_protocol.write_perm);
     BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&hids_init_obj.security_mode_ctrl_point.read_perm);
@@ -755,7 +770,7 @@ static void services_init(void)
 {
     dis_init();
     bas_init();
-    //hids_init();
+    hids_init();
 }
 
 /**@brief Function for handling a Connection Parameters error.
@@ -948,6 +963,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
         }
 
         default:
+            NRF_LOG_INFO("Unknown event: %d\n", ble_adv_evt);
             break;
     }
 }
@@ -1320,14 +1336,14 @@ static void keys_send(uint8_t key_pattern_len, uint8_t * p_key_pattern)
  */
 static void keyboard_scan_timeout_handler(void * p_context)
 {
-    const uint8_t *key_packet;
-    uint8_t        key_packet_size;
+    const uint8_t *key_packet = NULL;
+    uint8_t        key_packet_size = 0;
     if (keyboard_new_packet(&key_packet, &key_packet_size)) {
         if(key_packet[2] == 0xFA){
             sleep_mode_enter();
         } else {
             if (m_conn_handle != BLE_CONN_HANDLE_INVALID) {
-                keys_send(key_packet_size,(uint8_t *)&key_packet[0]);
+                keys_send(key_packet_size, (uint8_t *)&key_packet[0]);
             }
         }
     }
@@ -1405,15 +1421,17 @@ static void lfclk_config(void)
  */
 int main(void)
 {
-    bool     erase_bonds;
+    bool     erase_bonds = false;
     uint32_t err_code;
     lfclk_config();
     // Initialize.
-    //err_code = NRF_LOG_INIT(NULL);
-    //APP_ERROR_CHECK(err_code);
+    err_code = NRF_LOG_INIT(NULL);
+    APP_ERROR_CHECK(err_code);
 
+    SEGGER_RTT_WriteString(0, "Makkk..\n");
+    NRF_LOG_INFO("Started\n");
     timers_init();
-    /*ble_stack_init();
+    ble_stack_init();
     scheduler_init();
     peer_manager_init(erase_bonds);
     if (erase_bonds == true)
@@ -1423,12 +1441,11 @@ int main(void)
     gap_params_init();
     advertising_init();
     services_init();
-    conn_params_init();*/
+    conn_params_init();
 
     // Start execution.
-    NRF_LOG_INFO("HID Mouse Start!\r\n");
     timers_start();
-    //advertising_start();
+    advertising_start();
 
     /*twi_init();
     elan_i2c_power_control(&m_touchPadClient, true);
@@ -1440,7 +1457,7 @@ int main(void)
         /*if (sleep) {
             sd_power_system_off();
         }*/
-        //app_sched_execute();
+        app_sched_execute();
         //power_manage();
     }
 }

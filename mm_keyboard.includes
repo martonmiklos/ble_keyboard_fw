@@ -128,7 +128,6 @@ config
 ../../../components/softdevice/s130/headers
 ../../../components/softdevice/s130/headers/nrf51
 ../../../components/softdevice/s332/headers
-../../../components/boards
 ../../../components/libraries/gpiote
 ../../../components/libraries/mailbox
 ../../../components/libraries/sha256
